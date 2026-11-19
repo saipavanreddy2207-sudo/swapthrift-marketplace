@@ -134,3 +134,13 @@ Das Frontend liest die API-Basis-URL in dieser Reihenfolge:
 Für lokale Entwicklung `config.js` leer lassen. Für Hostings ohne Build-time-Env (z. B. temporäre Tunnels) kann nach dem Build ausschließlich `dist/config.js` angepasst werden; ein erneuter Build ist dann nicht nötig.
 
 > Ein Cloudflare Quick Tunnel (`npx cloudflared tunnel --url http://127.0.0.1:5173`) oder ein SSH-Tunnel eignet sich nur für Live-Demos: Die Tunnel müssen aktiv bleiben und haben keine Uptime-Garantie. Für dauerhaften Betrieb Vercel + Render verwenden.
+
+### Selbstheilende Demo (ohne Hosting-Konto)
+
+Für eine Live-Demo ohne Plattform-Zugang:
+
+1. `node scripts/preview-proxy.js` bündelt Frontend (5173) und API (5000) auf `http://127.0.0.1:4000` – dadurch genügt **ein** Tunnel und es gibt keine CORS-Probleme.
+2. `scripts/preview-watchdog.ps1` überwacht Backend, Frontend, Proxy und Tunnel, startet ausgefallene Prozesse neu und aktualisiert bei einer neuen Tunnel-URL die Umgebungsvariablen sowie die Weiterleitungsseite.
+3. `frontend/dist/config.js` enthält `window.__SWAPTHRIFT_API_URL__ = '/api'` (gleiche Origin).
+
+Der Tunnel ist weiterhin nur eine Demo mit eingeschränkter Verfügbarkeit; echte 24/7-Verfügbarkeit erfordert Vercel + Render.
