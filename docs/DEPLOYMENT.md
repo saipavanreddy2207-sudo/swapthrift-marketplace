@@ -133,4 +133,4 @@ Das Frontend liest die API-Basis-URL in dieser Reihenfolge:
 
 Für lokale Entwicklung `config.js` leer lassen. Für Hostings ohne Build-time-Env (z. B. temporäre Tunnels) kann nach dem Build ausschließlich `dist/config.js` angepasst werden; ein erneuter Build ist dann nicht nötig.
 
-> Ein SSH-Tunnel (z. B. localhost.run) eignet sich nur für kurzlebige Live-Demos: Die kostenlosen Domains wechseln regelmäßig und der Tunnel muss aktiv bleiben. Für dauerhaften Betrieb Vercel + Render verwenden.
+> Ein Cloudflare Quick Tunnel (`npx cloudflared tunnel --url http://127.0.0.1:5173`) oder ein SSH-Tunnel eignet sich nur für Live-Demos: Die Tunnel müssen aktiv bleiben und haben keine Uptime-Garantie. Für dauerhaften Betrieb Vercel + Render verwenden.
