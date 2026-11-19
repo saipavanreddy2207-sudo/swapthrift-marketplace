@@ -1,0 +1,8 @@
+node_modules/
+.env
+coverage/
+npm-debug.log*
+
+# Locally stored uploads (Cloudinary is used when configured)
+uploads/*
+!uploads/.gitkeep
