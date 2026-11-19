@@ -1,8 +1,8 @@
 import { io } from 'socket.io-client'
-import { TOKEN_KEY } from './api'
+import { apiBaseUrl, TOKEN_KEY } from './api'
 
 export function socketOrigin() {
-  return (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api\/?$/, '')
+  return apiBaseUrl().replace(/\/api\/?$/, '')
 }
 
 /** Socket used by chat and notification listeners; token is read at connect time. */

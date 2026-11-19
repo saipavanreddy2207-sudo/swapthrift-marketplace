@@ -120,3 +120,17 @@ VITE_API_URL=https://<deine-backend-domain>/api
 - [ ] Admin-Konto angelegt
 - [ ] Rechtsseiten von Rechtsberatung geprüft
 - [ ] Backups aktiviert
+
+---
+
+## 9. Runtime-API-URL (Optional)
+
+Das Frontend liest die API-Basis-URL in dieser Reihenfolge:
+
+1. `window.__SWAPTHRIFT_API_URL__` aus `frontend/public/config.js`
+2. `VITE_API_URL` aus `frontend/.env`
+3. `http://localhost:5000/api`
+
+Für lokale Entwicklung `config.js` leer lassen. Für Hostings ohne Build-time-Env (z. B. temporäre Tunnels) kann nach dem Build ausschließlich `dist/config.js` angepasst werden; ein erneuter Build ist dann nicht nötig.
+
+> Ein SSH-Tunnel (z. B. localhost.run) eignet sich nur für kurzlebige Live-Demos: Die kostenlosen Domains wechseln regelmäßig und der Tunnel muss aktiv bleiben. Für dauerhaften Betrieb Vercel + Render verwenden.

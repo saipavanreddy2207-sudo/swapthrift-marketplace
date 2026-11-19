@@ -2,8 +2,14 @@ import axios from 'axios'
 
 export const TOKEN_KEY = 'swapthrift_token'
 
+/** Runtime override from /config.js, then build-time env, then local default. */
+export function apiBaseUrl() {
+  const runtime = typeof window !== 'undefined' ? window.__SWAPTHRIFT_API_URL__ : ''
+  return runtime || import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+}
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  baseURL: apiBaseUrl(),
   withCredentials: true,
   timeout: 20000,
   headers: { Accept: 'application/json' },
