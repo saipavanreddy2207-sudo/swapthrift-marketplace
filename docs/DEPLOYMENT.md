@@ -1,8 +1,14 @@
 # Deployment-Dokumentation
 
-Zielzustand: Frontend auf Vercel, Backend auf Render (oder vergleichbar), Datenbank auf MongoDB Atlas, Bilder auf Cloudinary, Zahlungen im Stripe-Sandbox-Modus.
+**Live_URL:** https://swapthrift.vercel.app
 
-> Die Anwendung ist lokal vollständig verifiziert. Diese Anleitung beschreibt die produktive Konfiguration für Vercel + Render. Für echte Produktion sind Cloudinary-Zugangsdaten erforderlich, weil der lokale Upload-Fallback auf Render nicht dauerhaft gespeichert wird.
+**Stabiler Kurzlink:** https://is.gd/swapthrift_app → https://rentry.co/swapthrift-live-2026 → Live_URL
+
+**Founder & Creator:** sai pavan reddy pedaveti · saipavanreddy2207@gmail.com
+
+SwapThrift läuft als **eine Vercel-Umgebung** mit statischem Frontend, Express/Socket.IO-Funktion, MongoDB Atlas und MongoDB-gestützten Uploads. Cloudinary ist optional; ohne Cloudinary werden Bildbytes in der MongoDB-Collection `uploads` gespeichert und über `/uploads/:filename` ausgeliefert. Damit funktionieren Profilbilder und Inseratsbilder auch über mehrere Serverless-Instanzen hinweg.
+
+> `.env`-Dateien und Tokens gehören nie ins Repository oder in ein ZIP. Alle Secrets liegen ausschließlich als Umgebungsvariablen beim Hosting-Anbieter.
 
 ---
 
@@ -10,137 +16,140 @@ Zielzustand: Frontend auf Vercel, Backend auf Render (oder vergleichbar), Datenb
 
 1. Cluster erstellen (M0 Free reicht für Tests).
 2. **Database Access:** DB-Benutzer mit `Read and write to any database`.
-3. **Network Access:** IP des Backend-Hosts freigeben (Render：`0.0.0.0/0` mit Zugriffsschutz, besser: statische IP).
-4. Connection-String kopieren und als `MONGO_URI` beim Backend hinterlegen.
+3. **Network Access:** Für Vercel Functions ist der ausgehende IP-Adressbereich nicht fest. Aktuell ist `0.0.0.0/0` mit dem Kommentar `Vercel serverless` freigegeben. Für eine strengere Produktion():
+
+   - Cluster mit privatem Endpoint/VPC-Peering nutzen, oder
+   - IP-Ausschluss über ein Proxy-/Gateway-Setup lösen.
+
+4. Connection-String als `MONGO_URI` in Vercel hinterlegen.
 
 ---
 
-## 2. Backend auf Render
+## 2. Vercel (produktive 24/7-Deployment)
 
-1. GitHub-Repository mit Render verbinden.
-2. Neuer **Web Service**:
-   - Runtime: Node
-   - Build Command: `npm install`
-   - Start Command: `npm start`
-3. Umgebungsvariablen setzen:
+Projekt: `swapthrift` (Hobby Plan, Region Frankfurt).
 
-```env
-PORT=10000
-NODE_ENV=production
-MONGO_URI=<Atlas-URI>
-JWT_SECRET=<langer Zufallswert>
-CLIENT_URL=https://<deine-frontend-domain>
-CORS_ORIGINS=https://<preview-domain-1>,https://<preview-domain-2>
-SMTP_HOST=...
-SMTP_PORT=587
-SMTP_USER=...
-SMTP_PASS=...
-CLOUDINARY_CLOUD_NAME=...
-CLOUDINARY_API_KEY=...
-CLOUDINARY_API_SECRET=...
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-ADMIN_EMAIL=...
-ADMIN_PASSWORD=...
+### Root-Konfiguration (`vercel.json`)
+
+```json
+{
+  "framework": null,
+  "installCommand": "npm install --prefix backend --omit=dev && npm install --prefix frontend --include=dev",
+  "buildCommand": "npm --prefix frontend run build",
+  "outputDirectory": "frontend/dist",
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/index.js" },
+    { "source": "/socket.io", "destination": "/api/index.js" },
+    { "source": "/socket.io/", "destination": "/api/index.js" },
+    { "source": "/socket.io/:path*", "destination": "/api/index.js" },
+    { "source": "/uploads/:path*", "destination": "/api/index.js" },
+    { "source": "/:path*", "destination": "/index.html" }
+  ]
+}
 ```
 
-4. Health-Check-Pfad: `/api/health`
-5. HTTPS wird von Render automatisch bereitgestellt.
-6. `CLIENT_URL` und `CORS_ORIGINS` akzeptieren auch kommaseparierte Listen für Vercel-Preview-Deployments.
-7. Cloudinary ist in Produktion erforderlich: Der lokale `backend/uploads`-Fallback geht bei jedem Render-Neustart verloren.
+Wichtig: Die expliziten Rewrites für `/socket.io` und `/socket.io/` sind erforderlich. `:path*` allein trifft nicht den Pfad ohne weiteres Segment, wodurch der Socket.IO-Handshake sonst mit 404 abgebrochen wird.
 
----
+### Umgebungsvariablen
 
-## 3. Frontend auf Vercel
+| Variable | Wert / Zweck |
+|---|---|
+| `MONGO_URI` | Atlas-Connection-String |
+| `JWT_SECRET` | Langer Zufallswert für Tokens |
+| `API_PUBLIC_URL` | `https://swapthrift.vercel.app` – absolute Upload-URLs |
+| `VITE_API_URL` | `/api` – Frontend ruft die gleiche Origin auf |
+| `VITE_WS_ONLY` | `true` – Socket.IO nur via WebSocket (Vercel unterstützt kein Long-Polling hinter der Function) |
+| `NODE_ENV` | `production` |
 
-1. GitHub-Repository importieren.
-2. Framework Preset: **Vite**
-3. Root Directory: `frontend`
-4. Build Command: `npm run build`
-5. Output Directory: `dist`
-6. Umgebungsvariable:
+Der Installer muss `--include=dev` für das Frontend verwenden, weil Vercel bei `NODE_ENV=production` sonst die Vite-DevDependencies überspringt und der Build an `@vitejs/plugin-react` scheitert.
 
-```env
-VITE_API_URL=https://<deine-backend-domain>/api
+### Deployment
+
+```powershell
+$env:VERCEL_TOKEN=(Get-Content 'C:\Users\pedaveti sai pavan\AppData\Local\Temp\opencode\vercel-token.txt' -Raw).Trim()
+npx.cmd vercel --prod --yes
 ```
 
-7. Nach dem Deployment Domain in `CLIENT_URL` des Backends eintragen (CORS).
+Danach die Production-Domain `https://swapthrift.vercel.app` prüfen.
 
 ---
 
-## 4. Cloudinary
+## 3. Socket.IO auf Vercel
 
-1. Konto erstellen → Dashboard → Cloud Name, API Key, API Secret kopieren.
-2. Als Backend-Umgebungsvariablen hinterlegen.
-3. Upload-Ordner: `swapthrift/products` und `swapthrift/avatars`.
-4. Bilder werden optimiert (Resize/WebP) ausgeliefert.
+- `api/index.js` exportiert den HTTP-Server (nicht nur die Express-App), damit Vercel WebSocket-Upgrades verarbeiten kann.
+- Der Client nutzt `transports: ['websocket']` (`VITE_WS_ONLY=true`).
+- Erfolgreicher Handshake: `wss://swapthrift.vercel.app/socket.io/?EIO=4&transport=websocket` → HTTP 101.
+- Die Chat-Seite zeigt „Chat-Server verbunden“, wenn die Verbindung steht.
 
 ---
 
-## 5. Stripe (spätere Phase)
+## 4. Uploads
+
+Priorität:
+
+1. **Cloudinary** (wenn `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` gesetzt sind).
+2. **MongoDB-Fallback** (aktuell aktiv): Multer hält die Datei im Speicher, `backend/config/uploadStore.js` speichert die Bytes in der Collection `uploads`, `backend/app.js` liefert sie unter `/uploads/:filename` aus.
+
+Das lokale `backend/uploads`-Verzeichnis enthält nur die mitgelieferten Demo-Bilder und wird nicht für neue Serverless-Uploads verwendet.
+
+---
+
+## 5. Stripe (Sandbox)
 
 1. Stripe-Dashboard → **Connect** aktivieren (Eligibility/Country prüfen).
-2. Sandbox-Keys verwenden (`sk_test_...`).
-3. Webhook-Endpoint: `https://<backend>/api/webhooks/stripe`
+2. Nur Sandbox-Keys verwenden (`sk_test_...`).
+3. Webhook-Endpoint: `https://swapthrift.vercel.app/api/webhooks/stripe`
 4. Events: `payment_intent.succeeded`, `payment_intent.payment_failed`, `charge.refunded`, `account.updated`.
 5. `STRIPE_WEBHOOK_SECRET` aus dem Webhook-Dashboard kopieren.
-6. **Nie echte Zahlungen mit Test-Karten vorgeben** — Testmodus klar kennzeichnen.
+6. Der sichtbare Checkout bleibt ausdrücklich ein **Demo-Modus**: keine Kartendaten, keine echte Abbuchung, keine Zahlung als bezahlt markiert.
 
 ---
 
 ## 6. Domain & HTTPS
 
-- Domain bei Vercel/Render verbinden.
-- HTTPS-Zertifikate werden automatisch ausgestellt.
-- `CLIENT_URL` und CORS auf die finale Domain setzen.
+- HTTPS wird von Vercel automatisch bereitgestellt.
+- `API_PUBLIC_URL` muss der finalen Origin entsprechen, damit gespeicherte Bild-URLs auf allen Geräten funktionieren.
 - Cookies: `secure: true`, `sameSite: 'lax'` in Produktion.
 
 ---
 
 ## 7. Monitoring, Backups, Sicherheit
 
-- Fehler-Logging im Backend (Konsole + optionales Monitoring-Tool).
-- MongoDB Atlas: automatisierte Backups (auch im Free-Tier verfügbar je nach Plan).
+- Vercel-Logs: `npx.cmd vercel logs swapthrift.vercel.app`
+- Health-Check: `https://swapthrift.vercel.app/api/health`
+- MongoDB Atlas: automatisierte Backups aktivieren.
 - Rate-Limits auf Auth- und API-Endpunkten aktiv.
 - Helmet-Sicherheitsheader aktiv.
-- Regelmäßige Überprüfung der npm-Abhängigkeiten (`npm audit`).
+- Regelmäßig `npm audit --omit=dev` ausführen.
 - Admin-Zugang ausschließlich über geschützte Rollen; Audit-Log führt Aktionen mit.
+- Rechtsseiten sind Strukturentwürfe und benötigen eine qualifizierte rechtliche Prüfung vor dem echten Launch.
 
 ---
 
-## 8. Deployment-Checkliste
+## 8. Selbstheilende Demo (Fallback, nicht 24/7)
 
-- [ ] `.env` nicht im Repository
-- [ ] `MONGO_URI` zeigt auf Produktions-Cluster
-- [ ] `JWT_SECRET` lang und zufällig
-- [ ] `CLIENT_URL` = Frontend-Domain
-- [ ] Cloudinary-Zugangsdaten gesetzt
-- [ ] Stripe im Sandbox-Modus (für Tests)
-- [ ] Health-Endpoint erreichbar
-- [ ] Admin-Konto angelegt
-- [ ] Rechtsseiten von Rechtsberatung geprüft
+Der Kurzlink `https://is.gd/swapthrift_app` zeigt derzeit auf die Rentry-Seite, die wiederum auf Vercel verweist. Der frühere Cloudflare-Tunnel bleibt als Fallback erhalten:
+
+1. `node scripts/preview-proxy.js` bündelt Frontend (5173) und API (5000) auf `http://127.0.0.1:4000`.
+2. `scripts/preview-watchdog.ps1` überwacht Prozesse und aktualisiert die Rentry-Weiterleitung bei einer neuen Tunnel-URL.
+3. `frontend/dist/config.js` enthält `window.__SWAPTHRIFT_API_URL__ = '/api'`.
+
+Dieser Pfad ist nur eine Demo mit eingeschränkter Verfügbarkeit. Die permanente Adresse ist `https://swapthrift.vercel.app`.
+
+---
+
+## 9. Deployment-Checkliste
+
+- [x] `.env` nicht im Repository
+- [x] `MONGO_URI` zeigt auf Atlas
+- [x] `JWT_SECRET` lang und zufällig
+- [x] `API_PUBLIC_URL` = finale Origin
+- [x] Health-Endpoint erreichbar
+- [x] Socket.IO-Handshake 101
+- [x] Uploads persistent (MongoDB oder Cloudinary)
+- [x] Demo-Checkout ohne Kartendaten
+- [x] Admin-Bereich gibt 403 für normale Nutzer
+- [ ] Cloudinary für Bildoptimierung optional nachrüsten
+- [ ] Stripe-Sandbox nur bei echtem Bedarf aktivieren
+- [ ] Rechtsseiten von Rechtsberatung prüfen
 - [ ] Backups aktiviert
-
----
-
-## 9. Runtime-API-URL (Optional)
-
-Das Frontend liest die API-Basis-URL in dieser Reihenfolge:
-
-1. `window.__SWAPTHRIFT_API_URL__` aus `frontend/public/config.js`
-2. `VITE_API_URL` aus `frontend/.env`
-3. `http://localhost:5000/api`
-
-Für lokale Entwicklung `config.js` leer lassen. Für Hostings ohne Build-time-Env (z. B. temporäre Tunnels) kann nach dem Build ausschließlich `dist/config.js` angepasst werden; ein erneuter Build ist dann nicht nötig.
-
-> Ein Cloudflare Quick Tunnel (`npx cloudflared tunnel --url http://127.0.0.1:5173`) oder ein SSH-Tunnel eignet sich nur für Live-Demos: Die Tunnel müssen aktiv bleiben und haben keine Uptime-Garantie. Für dauerhaften Betrieb Vercel + Render verwenden.
-
-### Selbstheilende Demo (ohne Hosting-Konto)
-
-Für eine Live-Demo ohne Plattform-Zugang:
-
-1. `node scripts/preview-proxy.js` bündelt Frontend (5173) und API (5000) auf `http://127.0.0.1:4000` – dadurch genügt **ein** Tunnel und es gibt keine CORS-Probleme.
-2. `scripts/preview-watchdog.ps1` überwacht Backend, Frontend, Proxy und Tunnel, startet ausgefallene Prozesse neu und aktualisiert bei einer neuen Tunnel-URL die Umgebungsvariablen sowie die Weiterleitungsseite.
-3. `frontend/dist/config.js` enthält `window.__SWAPTHRIFT_API_URL__ = '/api'` (gleiche Origin).
-
-Der Tunnel ist weiterhin nur eine Demo mit eingeschränkter Verfügbarkeit; echte 24/7-Verfügbarkeit erfordert Vercel + Render.

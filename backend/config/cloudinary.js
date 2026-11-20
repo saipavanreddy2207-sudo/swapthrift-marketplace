@@ -6,7 +6,10 @@ import {
   uploadFileUrl,
   localPublicId,
   localFilenameFromPublicId,
+  newLocalFilename,
+  isAllowedImageMime,
 } from "./uploads.js";
+import { saveUpload, deleteUpload } from "./uploadStore.js";
 
 let configured = false;
 
@@ -82,6 +85,15 @@ export function uploadImage(buffer, folder = "swapthrift") {
 }
 
 async function deleteLocalImage(filename) {
+  if (process.env.VERCEL) {
+    try {
+      await deleteUpload(filename);
+      return { result: "deleted" };
+    } catch (error) {
+      console.warn(`[uploads] Löschen von ${filename} aus MongoDB fehlgeschlagen: ${error.message}`);
+      return { result: "error", error: error.message };
+    }
+  }
   try {
     await fs.unlink(path.join(UPLOAD_DIR, filename));
     return { result: "deleted" };
@@ -130,11 +142,31 @@ export async function imageFromFile(file, folder = "swapthrift", isMain = false)
     throw new Error("Keine Bilddatei übergeben.");
   }
 
-  const uploaded =
-    file.filename && file.path
-      ? { url: uploadFileUrl(file.filename), publicId: localPublicId(file.filename) }
-      : await uploadImage(file.buffer, folder);
+  // Local development keeps files on disk and serves them from backend/uploads.
+  if (file.filename && file.path) {
+    return {
+      url: uploadFileUrl(file.filename),
+      publicId: localPublicId(file.filename),
+      isMain,
+    };
+  }
 
+  // On Vercel there is no shared writable filesystem. Without Cloudinary, keep
+  // the bytes in MongoDB and serve them through the regular /uploads route.
+  if (!isCloudinaryConfigured() && process.env.VERCEL && file.buffer) {
+    if (!isAllowedImageMime(file.mimetype)) {
+      throw new Error("Nur JPEG-, PNG-, WebP-, GIF- oder AVIF-Bilder sind erlaubt.");
+    }
+    const filename = newLocalFilename(file.mimetype);
+    await saveUpload(filename, file.buffer, file.mimetype);
+    return {
+      url: uploadFileUrl(filename),
+      publicId: localPublicId(filename),
+      isMain,
+    };
+  }
+
+  const uploaded = await uploadImage(file.buffer, folder);
   return { url: uploaded.url, publicId: uploaded.publicId, isMain };
 }
 

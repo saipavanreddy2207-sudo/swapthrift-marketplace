@@ -182,13 +182,13 @@ npm run dev
 
 Siehe [DEPLOYMENT.md](DEPLOYMENT.md). Kurz:
 
-- Frontend: Vercel (Build `npm run build`, Output `dist`)
-- Backend: Render (Start `npm start`)
+- Frontend + API + Socket.IO: gemeinsam auf Vercel (`api/index.js`, `vercel.json`)
 - Datenbank: MongoDB Atlas
-- Bilder: Cloudinary
-- Zahlungen: Stripe Sandbox
-- Alle Secrets als Umgebungsvariablen beim Hosting-Anbieter hinterlegen
-- HTTPS wird von den Hosting-Anbietern automatisch bereitgestellt
+- Bilder: Cloudinary (optional) oder MongoDB-Upload-Collection
+- Zahlungen: Demo-Checkout; Stripe-Sandbox optional vorbereitet
+- Alle Secrets als Umgebungsvariablen bei Vercel hinterlegen
+- HTTPS wird von Vercel automatisch bereitgestellt
+- Live: https://swapthrift.vercel.app
 
 ---
 

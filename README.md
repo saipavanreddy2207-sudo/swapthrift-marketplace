@@ -4,6 +4,10 @@
 
 Ein professioneller, deutschlandweiter Second-Hand-Marktplatz mit React, Vite, Node.js, Express, MongoDB und Socket.IO.
 
+**Live:** https://swapthrift.vercel.app
+
+**Founder & Creator:** [sai pavan reddy pedaveti](mailto:saipavanreddy2207@gmail.com) · saipavanreddy2207@gmail.com
+
 > **Status:** Alle 14 Entwicklungsphasen sind implementiert und verifiziert. Die Anwendung ist lokal lauffähig und nutzt echte MongoDB-Daten, echte JWT-Authentifizierung, echte Datei-Uploads und echte API-Abläufe. Der Checkout bleibt bewusst im Demonstrationsmodus: Es werden keine Kartendaten erfasst und kein Geld abgebucht. Stripe wird ausschließlich optional im Sandbox-Modus vorbereitet.
 
 ---
@@ -48,7 +52,7 @@ SwapThrift ist ein Full-Stack-Marktplatz für Gebrauchtwaren mit Fokus auf den d
 |---|---|
 | Frontend | React 19, Vite, Tailwind CSS v4, React Router, Axios, Lucide React, Socket.IO Client |
 | Backend | Node.js, Express, MongoDB Atlas, Mongoose, JWT, bcryptjs, Zod, Helmet, express-rate-limit |
-| Uploads | Cloudinary (optional) oder lokaler `backend/uploads`-Fallback |
+| Uploads | Cloudinary (optional) oder MongoDB-Collection `uploads` als dauerhafter Fallback |
 | E-Mail | Nodemailer/SMTP (optional; ohne Konfiguration nur Server-Log) |
 | Zahlungen | Demo-Modus ohne Zahlungsdaten; Stripe-Sandbox optional vorbereitet |
 | Sicherheit | HTTP-only Cookies, Passwort-Hashing, Ratenlimitierung, Validierung, Rollenrechte |

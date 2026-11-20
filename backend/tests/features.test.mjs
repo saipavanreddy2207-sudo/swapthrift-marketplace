@@ -31,6 +31,7 @@ import {
   isSafeLocalFilename,
   localFilenameFromPublicId,
   localPublicId,
+  newLocalFilename,
   uploadFileUrl,
 } from "../config/uploads.js";
 
@@ -153,6 +154,9 @@ test("lokale Upload-PublicIds sind pfadsicher", () => {
   assert.equal(localFilenameFromPublicId("local:foto.jpg"), "foto.jpg");
   assert.equal(localFilenameFromPublicId("local:../../etc/passwd"), null);
   assert.equal(localFilenameFromPublicId("cloudinary-id"), null);
+  const generated = newLocalFilename("image/png");
+  assert.equal(isSafeLocalFilename(generated), true);
+  assert.match(generated, /^[0-9a-f-]{36}\.png$/);
 });
 
 test("API_PUBLIC_URL erzeugt absolute Upload-URLs", () => {

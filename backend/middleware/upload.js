@@ -1,8 +1,7 @@
-import { randomUUID } from "node:crypto";
 import { mkdir } from "node:fs/promises";
 import multer from "multer";
 import { isCloudinaryConfigured } from "../config/cloudinary.js";
-import { UPLOAD_DIR, isAllowedImageMime, mimeExtension } from "../config/uploads.js";
+import { UPLOAD_DIR, isAllowedImageMime, newLocalFilename } from "../config/uploads.js";
 
 export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 export const MAX_PRODUCT_IMAGES = 5;
@@ -25,25 +24,30 @@ const diskStorage = multer.diskStorage({
       .catch(callback);
   },
   filename(req, file, callback) {
-    callback(null, `${randomUUID()}${mimeExtension(file.mimetype)}`);
+    callback(null, newLocalFilename(file.mimetype));
   },
 });
 
 function uploaders(field, maxFiles) {
   const limits = { fileSize: MAX_FILE_SIZE, files: maxFiles };
   const common = { fileFilter: imageFilter, limits };
+  const memory = multer({ ...common, storage: memoryStorage }).array(field, maxFiles);
+  const disk = multer({ ...common, storage: diskStorage }).array(field, maxFiles);
   return {
-    cloudinary: multer({ ...common, storage: memoryStorage }).array(field, maxFiles),
-    local: multer({ ...common, storage: diskStorage }).array(field, maxFiles),
+    cloudinary: memory,
+    // Serverless filesystems are read-only; keep bytes in memory for MongoDB.
+    local: process.env.VERCEL ? memory : disk,
   };
 }
 
 function avatarUploaders() {
   const limits = { fileSize: MAX_FILE_SIZE, files: MAX_AVATAR_IMAGES };
   const common = { fileFilter: imageFilter, limits };
+  const memory = multer({ ...common, storage: memoryStorage }).single("avatar");
+  const disk = multer({ ...common, storage: diskStorage }).single("avatar");
   return {
-    cloudinary: multer({ ...common, storage: memoryStorage }).single("avatar"),
-    local: multer({ ...common, storage: diskStorage }).single("avatar"),
+    cloudinary: memory,
+    local: process.env.VERCEL ? memory : disk,
   };
 }
 

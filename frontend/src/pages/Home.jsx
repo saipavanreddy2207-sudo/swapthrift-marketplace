@@ -31,6 +31,7 @@ import productsService, { normaliseProduct } from '../services/products'
 import useApi from '../hooks/useApi'
 import { useToast } from '../context/ToastContext'
 import CategoryCard from '../components/CategoryCard'
+import FounderCorner from '../components/FounderCorner'
 import EmptyState from '../components/EmptyState'
 import Hero from '../components/Hero'
 import { Loader, ProductGridSkeleton } from '../components/Loader'
@@ -199,6 +200,7 @@ export default function Home() {
 
   return (
     <>
+      <FounderCorner />
       <Hero />
       <TrustBar />
 

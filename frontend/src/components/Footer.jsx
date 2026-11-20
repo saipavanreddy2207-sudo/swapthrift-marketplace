@@ -1,5 +1,6 @@
 import { Heart, Leaf, Mail, MapPin, PackageCheck, ShieldCheck, Truck } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { CREATOR, creatorMailto } from '../config/creator'
 import Logo from './Logo'
 
 const currentYear = new Date().getFullYear()
@@ -53,7 +54,27 @@ export default function Footer() {
               <span className="badge bg-brand-800 text-brand-100"><Truck className="size-3.5" /> Versand in DE</span>
               <span className="badge bg-brand-800 text-brand-100"><Leaf className="size-3.5" /> Nachhaltig</span>
             </div>
-            <a href="mailto:kontakt@swapthrift.de" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-sand-300 hover:text-sand-200">
+            <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="flex items-center gap-3">
+                <img
+                  src={CREATOR.photo}
+                  alt={CREATOR.name}
+                  width="600"
+                  height="800"
+                  loading="lazy"
+                  className="size-10 rounded-xl object-cover ring-2 ring-white/20"
+                />
+                <div>
+                  <p className="text-xs font-extrabold tracking-wider text-sand-300 uppercase">{CREATOR.role}</p>
+                  <p className="text-sm font-bold text-white">{CREATOR.name}</p>
+                </div>
+              </div>
+              <p className="mt-2 text-xs leading-relaxed text-brand-200">{CREATOR.note}</p>
+              <a href={creatorMailto} className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-sand-300 hover:text-sand-200">
+                <Mail className="size-4" /> {CREATOR.email}
+              </a>
+            </div>
+            <a href="mailto:kontakt@swapthrift.de" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-sand-300 hover:text-sand-200">
               <Mail className="size-4" /> kontakt@swapthrift.de
             </a>
           </div>
@@ -104,7 +125,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-10 flex flex-col gap-4 border-t border-white/10 pt-6 text-xs text-brand-300 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {currentYear} SwapThrift · Mit Liebe in Deutschland gemacht.</p>
+          <p>© {currentYear} SwapThrift · {CREATOR.role}: {CREATOR.name} · Mit Liebe in Deutschland gemacht.</p>
           <p className="flex items-center gap-1.5">
             <MapPin className="size-3.5" /> Berlin · Deutschlandweit für dich da
             <Heart className="ml-2 size-3.5 fill-sand-400 text-sand-400" />

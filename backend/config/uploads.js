@@ -1,4 +1,4 @@
-import path from "node:path";
+import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 /** Absolute path to backend/uploads (independent of the current working directory). */
@@ -21,8 +21,14 @@ export function mimeExtension(mimetype) {
   return MIME_EXTENSIONS[mimetype] || "";
 }
 
+/** Safe unique filename for a local or MongoDB-backed upload. */
+export function newLocalFilename(mimetype) {
+  return `${randomUUID()}${mimeExtension(mimetype)}`;
+}
+
 export function publicBaseUrl() {
-  return (process.env.API_PUBLIC_URL || "http://localhost:5000").replace(/\/+$/, "");
+  const fallback = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:5000";
+  return (process.env.API_PUBLIC_URL || fallback).replace(/\/+$/, "");
 }
 
 /** Absolute, publicly reachable URL for a locally stored upload. */

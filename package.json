@@ -1,0 +1,11 @@
+{
+  "name": "swapthrift",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "author": "sai pavan reddy pedaveti <saipavanreddy2207@gmail.com>",
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "npm --prefix frontend install && npm --prefix frontend run build"
+  }
+}

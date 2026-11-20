@@ -1,5 +1,6 @@
 import { AlertTriangle, FileText, Scale } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
+import { CREATOR, creatorMailto } from '../config/creator'
 
 const legalPages = {
   impressum: {
@@ -9,8 +10,9 @@ const legalPages = {
       {
         heading: 'Anbieterkennzeichnung',
         paragraphs: [
-          'SwapThrift wird als privates Projekt betrieben. Die vollständigen Anbieterangaben (Name, ladungsfähige Anschrift, Kontaktmöglichkeiten und ggf. Registerangaben) werden vor dem öffentlichen Launch ergänzt.',
-          'Kontakt: kontakt@swapthrift.de',
+          `SwapThrift wird als privates Projekt betrieben. Founder & Creator: ${CREATOR.name}.`,
+          `Kontakt: ${CREATOR.email} · Projektpostfach: kontakt@swapthrift.de`,
+          'Die vollständigen Anbieterangaben (ladungsfähige Anschrift und ggf. Registerangaben) werden vor dem öffentlichen Launch von einer Rechtsberatung geprüft und ergänzt.',
         ],
       },
       {
@@ -294,8 +296,8 @@ export default function Legal() {
           </div>
 
           <div className="mt-12 flex items-center gap-2 border-t border-brand-900/8 pt-6 text-sm text-slate-500">
-            <Scale className="size-4 text-brand-600" /> Fragen zu diesen Unterlagen? Schreib uns an{' '}
-            <a href="mailto:kontakt@swapthrift.de" className="link-brand">kontakt@swapthrift.de</a>
+            <Scale className="size-4 text-brand-600" /> Fragen zu diesen Unterlagen? Schreib an den Founder &amp; Creator{' '}
+            <a href={creatorMailto} className="link-brand">{CREATOR.email}</a>
           </div>
         </article>
       </div>
